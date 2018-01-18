@@ -1,0 +1,18 @@
+/*
+ * bayang_nar_rx.cpp
+ *
+ * Created: 15.01.2018 10:24:29
+ * Author : USER
+ */ 
+
+#include <avr/io.h>
+
+
+int main(void)
+{
+    /* Replace with your application code */
+    while (1) 
+    {
+    }
+}
+
