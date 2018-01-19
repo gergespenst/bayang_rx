@@ -48,6 +48,7 @@ T_CONTROLDATA recData;
 #define INIT_DIR_PORT_1() DIR_DDR_1 |= _BV(DIR_PIN_10) | _BV(DIR_PIN_11); DIR_PORT_1 &= ~(_BV(DIR_PIN_10) | _BV(DIR_PIN_11));
 uint32_t count = 0;
 void ExecComand(){
+#if 0
 	DEBUGPRINT(count++);
 	DEBUGPRINT(" Thr = ");
 	DEBUGPRINT(recData.throttle);
@@ -61,6 +62,8 @@ void ExecComand(){
 	DEBUGPRINT(recData.trims[0]);
 	DEBUGPRINT(" T1 = ");
 	DEBUGPRINT(recData.trims[1]);
+	DEBUGPRINT('\n');
+#endif
 
 	if (recData.pitch > 511)
 	{
@@ -69,8 +72,7 @@ void ExecComand(){
 		DIR_PORT_0 &= ~_BV(DIR_PIN_01);
 	}else{
 		SetPwm0((511 - recData.pitch)>>1);
-		DEBUGPRINT(" PWM0 = ");
-		DEBUGPRINT((511 - recData.pitch)>>1);
+	
 		DIR_PORT_0 |= _BV(DIR_PIN_01);
 		DIR_PORT_0 &= ~_BV(DIR_PIN_00);
 	}
@@ -87,7 +89,16 @@ void ExecComand(){
 		}
 	
 	
-	DEBUGPRINT('\n');
+	
+}
+#define BLINK_PORT	PORTB
+#define BLINK_DDR	DDRB
+#define BLINK_PIN	PINB1
+
+#define BLINK_INIT() BLINK_DDR |= _BV(BLINK_PIN); BLINK_PORT |= _BV(BLINK_PIN);
+
+void Blink(){
+	BLINK_PORT ^= _BV(BLINK_PIN);
 }
 
 void RecivePacket(){
@@ -102,11 +113,17 @@ void RecivePacket(){
 			//TODO: обработать потерю контроля
 			SetPwm0(0);
 			SetPwm1(0);
-			
+			BLINK_INIT();
 			NRF24L01_Initialize();
 			HW_DELAY_MS(100);
 			Bayang_init(packet,transmitterID);
+			
+			DeleteTask(Blink);
+			AddRealTimeTask(Blink,100,125);
+			
 			Bayang_bind();
+			
+			AddTask(Blink,100,500);
 			emptyPacketsCount = 0;
 		}
 		}else{
@@ -116,25 +133,29 @@ void RecivePacket(){
 	}
 }
 
-void Blink(){
-	PORTB ^= _BV(PINB1);
-}
+
 int main(){
 	StartSystemUSTimer();
 	InitSystemTimer(TimerProcess);
 	ENABLE_INTERRUPT();
 	INIT_DBG_PRINT();
 	DEBUGPRINT("\nSTART\n");
+	
+	BLINK_INIT();
+	
 	INIT_DIR_PORT_0();
 	INIT_DIR_PORT_1();
 	InitPwm0();
 	InitPwm1();
-	DDRB |= _BV(PINB1);
-	AddTask(Blink,100,200);
+	
+	
 	
 	NRF24L01_Initialize();
 	Bayang_init(packet,transmitterID);
+	AddRealTimeTask(Blink,100,125);
 	Bayang_bind();
+	DeleteTask(Blink);
+	AddTask(Blink,100,500);
 	
 	AddTask(RecivePacket,0,1);
 

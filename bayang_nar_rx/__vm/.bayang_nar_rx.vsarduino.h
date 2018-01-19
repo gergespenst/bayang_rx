@@ -19,8 +19,8 @@
 #define ARDUINO_AVR_NANO
 #define ARDUINO_ARCH_AVR
 void ExecComand();
-void RecivePacket();
 void Blink();
+void RecivePacket();
 int main();
 
 #include "pins_arduino.h" 
